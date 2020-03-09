@@ -4,6 +4,10 @@ from sender import Sender
 from receiver import DotReceiver
 from util import add_rabbitmq_args
 
+import os
+from datetime import datetime
+
+
 if __name__ == '__main__':
     parser = ArgumentParser()
     add_rabbitmq_args(parser)
@@ -25,13 +29,11 @@ if __name__ == '__main__':
                             password=args.credentials)
 
     sender = Sender(host=args.ip, port=args.port, username=args.username, password=args.credentials)
-    # Use prefetch count, will skip the receiver if it is still busy. Not only receiver 2 will get the lk tasts
+    # Use prefetch count, will skip the receiver if it is still busy. Not only receiver 2 will get the long tasks
     receiver_thread_1 = Thread(target=receiver.start_receive, args=(args.queue, False, 1))
     receiver_thread_2 = Thread(target=receiver2.start_receive, args=(args.queue, False, 1))
     sender_thread = Thread(target=sender.send_multiple, args=(args.messages, 0.0, args.queue, args.exchange))
 
-    # notice the round robin, if tasks have different sizes periodically (e.g. each 3rd is long)
-    # other workers will be idle
     receiver_thread_1.start()
     receiver_thread_2.start()
     sender_thread.start()

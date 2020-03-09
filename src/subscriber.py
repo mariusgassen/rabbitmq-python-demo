@@ -1,10 +1,10 @@
 import logging
 from abc import ABC, abstractmethod
 from typing import List
-
 from pika import PlainCredentials, ConnectionParameters, BlockingConnection
 from pika.channel import Channel
 from pika.spec import Exchange
+from datetime import datetime
 
 logger = logging.getLogger('rabbitmq-subscriber')
 logging.basicConfig()
@@ -13,7 +13,7 @@ logger.setLevel(level=logging.DEBUG)
 
 class Subscriber(ABC):
     def __init__(self,
-                 name='X',
+                 name='s',
                  host='localhost',
                  port=5672,
                  username='admin',
@@ -48,3 +48,42 @@ class Subscriber(ABC):
     @abstractmethod
     def callback(self, ch, method, properties, body):
         pass
+
+
+class ConsoleLogSubscriber(Subscriber):
+
+    def callback(self, ch, method, properties, body):
+        message = self._decode_message(message=body)
+        timestamp = datetime.now().strftime('%m/%d/%Y, %H:%M:%S')
+        logger.debug(f'[{self.name}] Received log message {message}')
+        print(f'[{self.name}] {timestamp} {message}')
+
+
+class FileLogSubscriber(Subscriber):
+    def __init__(self, name='file_logger',
+                 host='localhost',
+                 port=5672,
+                 username='admin',
+                 password='pass',
+                 exchange_name='ex',
+                 exchange_type='direct',
+                 log_file='file_log.log'):
+        self.log_file = log_file
+        Subscriber.__init__(self, name=name,
+                            host=host,
+                            port=port,
+                            username=username,
+                            password=password,
+                            exchange_name=exchange_name,
+                            exchange_type=exchange_type)
+
+    def _log_to_file(self, message):
+        with open(self.log_file, 'a') as log:
+            timestamp = datetime.now().strftime('%m/%d/%Y, %H:%M:%S')
+            log.write(f'{timestamp} {message}\n')
+            log.close()
+
+    def callback(self, ch, method, properties, body):
+        message = self._decode_message(message=body)
+        logger.debug(f'[{self.name}] Received log message {message}')
+        self._log_to_file(message)
