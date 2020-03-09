@@ -1,4 +1,5 @@
-# RabbitMQ Tutorial
+# RabbitMQ Python Demo
+Based on the [RabbitMQ Tutorials](https://www.rabbitmq.com/tutorials)
 
 # System Requirements
 
